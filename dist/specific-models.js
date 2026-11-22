@@ -1,0 +1,3 @@
+export const specificModels={ 'ferrari-458-italia':{make:'Ferrari',name:'458 Spider',from:2011,to:2015,path:'/assets/models/ferrari-458-italia.glb',author:'vicent091036',source:'https://sketchfab.com/models/57bf6cc56931426e87494f554df1dab6',license:'https://creativecommons.org/licenses/by/4.0/'} };
+export function matchingModel(v){const m=specificModels[v.model3d];return m&&v.make.toLowerCase()===m.make.toLowerCase()&&v.name.toLowerCase()===m.name.toLowerCase()&&+v.year>=m.from&&+v.year<=m.to?m:null;}
+export function validateSpecificModel(v){if(v.model3d&&!matchingModel(v))throw Error('El archivo 3D no corresponde a la marca, modelo y generación de esta ficha.');}

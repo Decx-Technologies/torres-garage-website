@@ -1,0 +1,1 @@
+import {readFile,writeFile} from 'node:fs/promises';let s=await readFile('dist/torres-panorama.js','utf8');s=s.replace('let yaw=0,pitch=0','let yaw=-Math.PI/2,pitch=0');await writeFile('dist/torres-panorama.js',s);

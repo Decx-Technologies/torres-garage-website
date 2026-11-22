@@ -1,0 +1,12 @@
+import {readFile,writeFile} from 'node:fs/promises';
+async function edit(path,fn){const s=await readFile(path,'utf8');await writeFile(path,fn(s));}
+await edit('backend.mjs',s=>"import {importSpecificDemo} from './specific-demo.mjs';\nimport {validateSpecificModel} from './dist/specific-models.js';\n"+s.replace("if(inventory.length&&!inventory.some", "if(process.env.SKIP_DEMO_SEED!=='1')inventory=await importSpecificDemo(data,inventory);\nif(inventory.length&&!inventory.some")
+.replace("normalizeOffer(input,out,previous);", "normalizeOffer(input,out,previous);out.model3d=String(input.model3d??previous?.model3d??'');validateSpecificModel(out);if(previous?.showcaseDemo){out.showcaseDemo=true;out.photoCredits=previous.photoCredits;}")
+.replace("p==='/assets/reference.png'", "p==='/assets/reference.png'||/^\\/assets\\/examples\\/ferrari-458-[12]\\.jpg$/.test(p)")
+.replace("'.webp':'image/webp'", "'.webp':'image/webp','.glb':'model/gltf-binary','.wasm':'application/wasm','.json':'application/json'"));
+await edit('inventory-public.mjs',s=>s.replace("'videoLinks'","'videoLinks','model3d','showcaseDemo','photoCredits'"));
+await edit('dist/catalog-experience.js',s=>s.replace("import {createVehicleMedia} from './vehicle-3d.js';","import {createSpecificMedia as createVehicleMedia} from './specific-viewer.js';")
+.replace("offerParts(v)?'En oferta'", "v.showcaseDemo?'Demostración · no está en venta':offerParts(v)?'En oferta'")
+.replace("(v.exampleKey?'EJEMPLO EDITABLE':'DISPONIBLE')", "(v.showcaseDemo?'DEMOSTRACIÓN · NO ESTÁ EN VENTA':v.exampleKey?'EJEMPLO EDITABLE':'DISPONIBLE')")
+.replace("copy.append(inquire);", "if(v.photoCredits){const credits=el('div','vehicle-3d-note');for(const credit of v.photoCredits){const a=el('a','',credit.label);a.href=credit.url;a.target='_blank';a.rel='noopener noreferrer';credits.append(a,el('br'));}copy.append(credits);}copy.append(inquire);"));
+await edit('dist/admin-v2.js',s=>s.replace("const videoEditor=initVideoEditor({form,node});", "const modelLabel=node('label','','Modelo 3D específico'),modelSelect=node('select');modelSelect.name='model3d';for(const [value,title]of [['','Sin archivo específico'],['ferrari-458-italia','Ferrari 458 Italia · generación 2009–2015']]){const o=node('option','',title);o.value=value;modelSelect.append(o);}modelLabel.append(modelSelect);identityFields.append(modelLabel);const videoEditor=initVideoEditor({form,node});"));

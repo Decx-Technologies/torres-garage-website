@@ -1,0 +1,3 @@
+import {readFile,writeFile} from 'node:fs/promises';
+let s=await readFile('dist/admin-workspace.css','utf8');s+='\n.capture-diagram svg{display:block;width:100%;height:auto}.admin-light .capture-panel .eyebrow{color:#9b2041}.tour-expanded .tour-controls button:last-child{display:none}\n';await writeFile('dist/admin-workspace.css',s);s=await readFile('dist/stories.css','utf8');s+='\n.tour-expanded .tour-controls button:last-child{display:none}\n';await writeFile('dist/stories.css',s);
+const pkg=JSON.parse(await readFile('package.json','utf8'));pkg.scripts.test+=' torres-guide.test.mjs';await writeFile('package.json',JSON.stringify(pkg,null,2)+'\n');

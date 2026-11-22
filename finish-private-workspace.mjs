@@ -1,0 +1,4 @@
+import {readFile,writeFile} from 'node:fs/promises';async function edit(p,f){await writeFile(p,f(await readFile(p,'utf8')));}
+await edit('dist/admin-operations.js',s=>s.replace("header.prepend(theme);", "header.prepend(theme);const headerSize=()=>document.body.style.setProperty('--admin-header-height',Math.ceil(document.querySelector('.admin-header').getBoundingClientRect().height)+'px');new ResizeObserver(headerSize).observe(document.querySelector('.admin-header'));headerSize();"));
+await edit('backend.mjs',s=>s.replace("key==='description'?6000:150", "key==='description'?6000:key==='version'?500:150"));
+const pkg=JSON.parse(await readFile('package.json','utf8'));if(!pkg.scripts.test.includes('private-sales'))pkg.scripts.test+=' private-sales.test.mjs';await writeFile('package.json',JSON.stringify(pkg,null,2));

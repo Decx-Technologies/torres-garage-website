@@ -1,0 +1,11 @@
+import {readFile,writeFile} from 'node:fs/promises';
+let s=await readFile('dist/vehicle-assistant.js','utf8');
+s=s.replace("set('make',[...new Set([...popular,...r.options])].sort((a,b)=>a.localeCompare(b,'es')));", "set('make',[...new Map([...popular,...r.options].map(v=>[normalize(v),v])).values()].sort((a,b)=>a.localeCompare(b,'es')));");
+s=s.replace("list.length?'No coincide ninguna opción. Puedes revisar el texto.':'Sin opciones verificadas para esta combinación.'", "menu.dataset.loading==='true'?'Consultando el catálogo…':list.length?'No coincide ninguna opción. Puedes revisar el texto.':'Sin opciones verificadas para esta combinación.'");
+s=s.replace("status.textContent='Buscando modelos de '", "menus.get('name').menu.dataset.loading='true';draw('name');status.textContent='Buscando modelos de '");
+s=s.replace("modelsKey=mk;set('name',r.options);", "modelsKey=mk;menus.get('name').menu.dataset.loading='false';set('name',r.options);");
+s=s.replace("status.textContent='Buscando versiones exactas de '", "menus.get('version').menu.dataset.loading='true';draw('version');status.textContent='Buscando versiones exactas de '");
+s=s.replace("trimsKey=tk;trims=r.options||[];", "trimsKey=tk;menus.get('version').menu.dataset.loading='false';trims=r.options||[];");
+s=s.replace("}catch(e){if(ticket===generation)status.textContent=e.message+' Puedes reintentar o completar con la documentación de la unidad.';}", "}catch(e){if(ticket===generation){menus.get('name').menu.dataset.loading='false';menus.get('version').menu.dataset.loading='false';status.textContent=e.message+' Puedes reintentar o completar con la documentación de la unidad.';}}");
+await writeFile('dist/vehicle-assistant.js',s);
+const packageJson=JSON.parse(await readFile('package.json','utf8'));packageJson.scripts.test+=' catalog-money.test.mjs';await writeFile('package.json',JSON.stringify(packageJson,null,2));

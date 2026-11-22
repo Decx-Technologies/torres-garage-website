@@ -1,0 +1,15 @@
+Photography: Miguel Angel Victoria / Sinaloa 360
+Source: https://www.sinaloa360.com/virtual-car-tours/
+Original photographic tour: https://360.sinaloa360.com/tour-virtual-vehiculos/
+License: Creative Commons Attribution 4.0 International
+https://creativecommons.org/licenses/by/4.0/
+The source article explicitly grants use of its photographs under this license.
+
+BMW en el Ayuntamiento — panorama_CA069AAF_C67C_3992_4198_A9B3CC19253D
+Six photographic cube faces, r/l/u/d/f/b, downloaded from:
+https://360.sinaloa360.com/tour-virtual-vehiculos/media/panorama_CA069AAF_C67C_3992_4198_A9B3CC19253D_0/{face}/vr2gen/0.jpg
+
+Changes: the six faces were reprojected to a 4096x2048 equirectangular PNG.
+Dashboard and seats detail files are the front and back faces of this exact panorama.
+No source player, proprietary software, or Toyosa photographs were copied.
+This reference has no verified exterior, model year or trim; it is not inventory for sale.

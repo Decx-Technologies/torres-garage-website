@@ -1,0 +1,1 @@
+import {readFile,writeFile} from 'node:fs/promises';let s=await readFile('google-auto-pricing.test.mjs','utf8');s=s.replace("api('admin/research','POST',vehicle)","api('admin/research','POST',{...vehicle,year:''})");await writeFile('google-auto-pricing.test.mjs',s);

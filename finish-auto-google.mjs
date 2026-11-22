@@ -1,0 +1,1 @@
+import {readFile,writeFile} from 'node:fs/promises';let s=await readFile('dist/google-pricing.js','utf8');s=s.replace("['Tracción','drive'],['Combustible'","['Tracción','drive'],['Carrocería','type'],['Combustible'").replace("?'BOB (Bs)':'USD'","?'BOB':'USD'");await writeFile('dist/google-pricing.js',s);

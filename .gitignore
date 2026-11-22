@@ -1,0 +1,24 @@
+# Runtime data created by the admin panel (inventory, uploads, admin account, private deals)
+data/
+account.json
+pricing-google.json
+*.tmp
+
+# Secrets / local config
+.env
+.env.*
+.openai/
+
+# Private research material (excluded from releases too)
+research/
+
+# Release builds (publish the zip as a GitHub Release asset instead)
+releases/
+
+# Dependencies, logs, OS/editor files
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

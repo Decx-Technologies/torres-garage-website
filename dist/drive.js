@@ -1,0 +1,1 @@
+export function normalizeDrive(raw){const s=String(raw||'').trim();if(/all.wheel|\bawd\b/i.test(s))return'AWD';if(/front.wheel|delantera/i.test(s))return'4x2 delantera';if(/rear.wheel|trasera/i.test(s))return'4x2 trasera';if(/4\s*[x×]\s*4|four.wheel|4.wheel|4wd/i.test(s))return'4x4';if(/4\s*[x×]\s*2|two.wheel|2.wheel|2wd/i.test(s))return'4x2';return s;}

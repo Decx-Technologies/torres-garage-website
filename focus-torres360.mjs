@@ -1,0 +1,7 @@
+import {readFile,writeFile} from 'node:fs/promises';
+async function edit(p,fn){const s=await readFile(p,'utf8');await writeFile(p,fn(s));}
+await edit('dist/admin-v2.js',s=>s.replace(/const modelLabel=node\('label','','Modelo 3D específico'\)[\s\S]*?identityFields.append\(modelLabel\);/,''));
+await edit('backend.mjs',s=>s.replace("import {validateSpecificModel} from './dist/specific-models.js';\n",'').replace("out.model3d=String(input.model3d??previous?.model3d??'');validateSpecificModel(out);",''));
+await edit('inventory-public.mjs',s=>s.replace("'model3d',",''));
+await edit('dist/catalog-experience.js',s=>s.replace("import {createSpecificMedia as createVehicleMedia} from './specific-viewer.js';","import {createPhotoTourMedia as createVehicleMedia} from './torres-tour.js';").replace(/if\(v.torres360\?\.enabled\)\{const tour=el\('details','torres-tour-details'\)[\s\S]*?media.append\(tour\);\}/,''));
+await edit('dist/torres-tour-admin.js',s=>"import {installCaptureGuide} from './torres-guide.js';\n"+s.replace("const button=(text,fn)=>", "const guide=installCaptureGuide(section,node,()=>({exterior,scenes}));const button=(text,fn)=>").replace("preview.replaceChildren();preview.hidden=true;}\n async function upload", "preview.replaceChildren();preview.hidden=true;guide.refresh();}\n async function upload").replace("draw();status.textContent='';", "draw();guide.reset();status.textContent='';"));

@@ -1,0 +1,1 @@
+import {readFile,writeFile} from 'node:fs/promises';let s=await readFile('dist/admin-auto-pricing.js','utf8');s=s.replace("notify(status.textContent,{type:'info'});return;","return;").replace("status.textContent=e.message;notify(e.message,{type:'error'});","status.textContent=e.message;");await writeFile('dist/admin-auto-pricing.js',s);

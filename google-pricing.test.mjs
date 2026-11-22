@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';import {research} from './google-research.mjs';import {parseGooglePrices,googlePriceQuestion} from './dist/google-pricing.js';
+const vehicle={make:'Toyota',name:'4Runner',year:'2025',version:'SR5',engine:'2.4 Turbo',currency:'USD',privateFinance:{minimum:10000}};
+const response='Venta rápida: USD 45,000; Precio justo: USD 48,000; Venta lenta: USD 51,000. Estimación para Bolivia.';
+assert.deepEqual(parseGooglePrices(response).map(s=>s.price),[45000,48000,51000]);assert.deepEqual(parseGooglePrices(response.replaceAll('USD','Bs'),'BOB').map(s=>s.price),[45000,48000,51000]);
+for(const raw of [response.replace('45,000','45,000–46,000'),response.replace('48,000','40,000'),response.replace('USD 51,000','BOB 51,000'),'Un anuncio Toyota: USD 40,000','Venta rápida: USD 45000; Precio justo: USD 48000'])assert.deepEqual(parseGooglePrices(raw),[]);
+let calls=[];const fetchPage=async url=>{calls.push(url);return new Response('<html><script>Venta rápida USD 10</script>Visión general creada por IA <p>'+response+'</p>Otras personas también preguntan</html>');};
+const result=await research(vehicle,{fetchPage});assert.equal(calls.length,1);assert.equal(new URL(calls[0]).hostname,'www.google.com');assert.equal(result.provider,'google');assert.equal(result.valuation[0].scenarios[1].price,48000);assert.equal(result.needsGoogleResponse,false);assert.ok(!googlePriceQuestion(vehicle).includes('10000'));
+const unavailable=await research(vehicle,{fetchPage:async()=>new Response('unusual traffic',{status:429})});assert.deepEqual(unavailable.valuation,[]);assert.equal(unavailable.needsGoogleResponse,true);
+const snippets=await research(vehicle,{fetchPage:async()=>new Response(response)});assert.deepEqual(snippets.valuation,[]);await assert.rejects(()=>research({...vehicle,year:''}),/marca, modelo y año/);
+console.log('PASS: Google-only request, three quoted prices, no synthetic fallback, currency/range validation and blocked responses.');

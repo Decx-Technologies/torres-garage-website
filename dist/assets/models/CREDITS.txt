@@ -1,0 +1,6 @@
+Ferrari 458 Italia by vicent091036. CC BY 4.0 https://creativecommons.org/licenses/by/4.0/
+Original: https://sketchfab.com/models/57bf6cc56931426e87494f554df1dab6
+Distribution: three.js r170 examples/models/gltf/ferrari.glb
+License record: https://github.com/mrdoob/three.js/issues/23089
+Materials and lighting modified for this demo. Artist model, not factory CAD; exact production year and individual unit not verified.
+Three.js MIT. Draco decoder Google Apache 2.0.

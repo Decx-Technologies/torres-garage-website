@@ -1,0 +1,11 @@
+import {readFile,writeFile} from 'node:fs/promises';async function edit(p,f){await writeFile(p,f(await readFile(p,'utf8')));}
+await edit('automatic-research.mjs',s=>s.replace("const candidates=[...found.values()]",`try{const html=await publicPage('https://milautos.net/'+slug(make)+'-'+slug(model)+'-en-venta/');const links=[...new Set([...html.matchAll(/href=["'](https:\/\/milautos\\.net\/[^"']+\\.html)["']/g)].map(m=>m[1]))].filter(url=>url.toLowerCase().includes(slug(model)));links.sort((a,b)=>Number(b.includes('-'+year+'-'))-Number(a.includes('-'+year+'-')));for(const url of links.slice(0,8))if(!found.has(url))found.set(url,{url,title:make+' '+model,snippet:''});}catch{}
+ const candidates=[...found.values()]`).replace(".slice(0,12),results=[]", ".slice(0,20),results=[]").replace("['Bolmotor / autoventas','bolmotor.com']", "['Bolmotor / autoventas','bolmotor.com'],['Milautos · usados Bolivia','milautos.net']"));
+await edit('pricing.mjs',s=>s.replace("/(^|\\.)bolmotor\\.com$|\\.com\\.bo$/", "/(^|\\.)(?:bolmotor\\.com|milautos\\.net)$|\\.com\\.bo$/"));
+await edit('dist/money.js',s=>s.replace("amount.toLocaleString('es-BO'", "amount.toLocaleString('en-US'"));
+await edit('dist/admin-operations.js',s=>{
+ s=s.replace("const section=node('section','private-finance');", "let privateCurrencyTouched=false;const section=node('section','private-finance');");
+ s=s.replace("section.addEventListener('input',draw);", "fields.currency.addEventListener('change',()=>{privateCurrencyTouched=true;});form.elements.currency.addEventListener('change',()=>{if(!privateCurrencyTouched&&['minSalePrice','ownerTarget','fixedCommission','salePrice','costs','received'].every(k=>parseAmount(fields[k].value)===null)){fields.currency.value=form.elements.currency.value||'BOB';choices.forEach(c=>c.sync());draw();}});section.addEventListener('input',draw);");
+ s=s.replace("open(vehicle){const f=vehicle?.privateFinance||{};", "open(vehicle){privateCurrencyTouched=!!vehicle?.privateFinance?.currency;const f=vehicle?.privateFinance||{};");return s;
+});
+const pkg=JSON.parse(await readFile('package.json','utf8'));if(!pkg.scripts.test.includes('private-sales'))pkg.scripts.test+=' private-sales.test.mjs';await writeFile('package.json',JSON.stringify(pkg,null,2));console.log('Additional local used-car source and consistent money formatting integrated.');

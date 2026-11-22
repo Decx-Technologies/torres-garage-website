@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict';
+import {specification,compatibilityErrors} from './dist/vehicle-specs.js';
+import {advertisedPrice,assessListing,valuations,amount,primaryListing} from './pricing.mjs';
+import {spawn} from 'node:child_process';import {mkdtemp} from 'node:fs/promises';import {tmpdir} from 'node:os';import {join} from 'node:path';import {fileURLToPath} from 'node:url';
+const sr5={make:'Toyota',name:'4Runner SR5',year:'2025'};
+assert.deepEqual(specification(sr5).engine,['2.4 Turbo']);
+assert.equal(specification({...sr5,year:'2024'}),null);
+assert.ok(compatibilityErrors({...sr5,engine:'Eléctrico'}).length);
+assert.ok(compatibilityErrors({...sr5,engine:'2.4 Turbo Híbrido'}).length);
+assert.ok(compatibilityErrors({...sr5,engine:'2.4 Turbo',fuel:'Eléctrico'}).length);
+assert.equal(compatibilityErrors({...sr5,engine:'2.4 Turbo',fuel:'Gasolina',transmission:'Automática'}).length,0);
+assert.equal(specification({make:'Ford',name:'Bronco Badlands',year:'2026',engine:'2.7 V6'}).transmission[0],'Automática');
+assert.equal(specification({make:'Desconocida',name:'Cualquiera',year:'2025'}),null);
+assert.equal(amount('45.000,50'),45000.5);assert.equal(amount('45,000.50'),45000.5);
+assert.deepEqual(advertisedPrice('USD 45.000'),{price:45000,currency:'USD'});
+assert.deepEqual(advertisedPrice('USD 45000 4x4'),{price:45000,currency:'USD'});
+assert.deepEqual(advertisedPrice('Bs 450 000'),{price:450000,currency:'BOB'});
+const schema='<script type="application/ld+json">'+JSON.stringify({'@type':'Car',name:'Toyota 4Runner 2025',vehicleModelDate:2025,offers:{'@type':'Offer',price:45000,priceCurrency:'USD',url:'https://example.com/car'}})+'</script>';
+assert.equal(primaryListing(schema,'https://example.com/car').title,'Toyota 4Runner 2025');
+assert.equal(primaryListing(schema,'https://example.com/other'),null);
+assert.equal(primaryListing(schema+schema,'https://example.com/car'),null);
+assert.equal(advertisedPrice('$ 45000'),null);
+assert.equal(advertisedPrice('USD 45000 y USD 60000'),null);
+const listing={title:'Toyota 4Runner SR5 2025 Bolivia',url:'https://bolmotor.com/auto/1',snippet:'2.4 Turbo gasolina usada USD 45000'};
+assert.equal(assessListing(listing,{...sr5,engine:'2.4 Turbo'}).price,45000);
+assert.equal(assessListing({...listing,title:'Toyota 4Runner SR5 2024 Bolivia'},sr5).price,undefined);
+assert.equal(assessListing({...listing,snippet:'Desde USD 45000'},sr5).price,undefined);
+assert.equal(assessListing({...listing,url:'https://dealer.com/1',title:'Toyota 4Runner SR5 2025 Estados Unidos'},sr5).price,undefined);
+const refs=[40000,50000,60000].map((price,i)=>({price,currency:'USD',url:'https://example.com/'+i}));
+assert.deepEqual(valuations(refs)[0].scenarios.map(r=>r.price),[45000,50000,55000]);assert.equal(valuations(refs.slice(0,2)).length,0);assert.equal(valuations([...refs.slice(0,2),{...refs[2],currency:'BOB'}]).length,0);
+const cwd=await mkdtemp(join(tmpdir(),'torres-carousel-test-')),origin='http://127.0.0.1:5186';let cookie='';const server=spawn(process.execPath,[fileURLToPath(new URL('./backend.mjs',import.meta.url))],{cwd,env:{...process.env,PORT:'5186',SKIP_DEMO_SEED:'1'},stdio:['ignore','pipe','pipe']});
+async function api(path,method='GET',data){const r=await fetch(origin+'/api/'+path,{method,headers:{Origin:origin,Cookie:cookie,'Content-Type':'application/json'},body:data?JSON.stringify(data):undefined});if(r.headers.get('set-cookie'))cookie=r.headers.get('set-cookie').split(';')[0];return{status:r.status,data:await r.json()};}
+try{await new Promise((resolve,reject)=>{server.stdout.once('data',resolve);server.once('error',reject);});assert.equal((await api('admin/carousel','POST',{ids:[]})).status,401);await api('admin/setup','POST',{password:'Test-Only-Long-Password'});const ids=[];for(let i=0;i<6;i++){const r=await api('admin/inventory','POST',{make:'Marca de prueba',name:'Modelo '+i,year:'2025',status:'available',photos:['/assets/reference.png'],featured:i<5});assert.equal(r.status,200);ids.push(r.data.id);}assert.equal((await api('inventory')).data.filter(v=>v.featured).length,5);assert.equal((await api('admin/carousel','POST',{ids})).status,400);assert.equal((await api('admin/carousel','POST',{ids:[ids[5]]})).status,200);assert.deepEqual((await api('inventory')).data.filter(v=>v.featured).map(v=>v.id),[ids[5]]);assert.equal((await api('inventory')).data.length,6);assert.equal((await api('admin/carousel','POST',{ids:[]})).status,200);assert.equal((await api('inventory')).data.filter(v=>v.featured).length,0);assert.equal((await api('admin/inventory','POST',{...sr5,engine:'Eléctrico',status:'draft'})).status,400);console.log('PASS: carousel cap, independent catalog, empty selection, protected API, compatibility, currency parsing and evidence-based pricing.');}finally{server.kill();}

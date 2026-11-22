@@ -1,0 +1,66 @@
+import {automaticAiPricing} from './automatic-ai-pricing.mjs';
+import {importPhotoTourDemo} from './photo-tour-demo.mjs';
+import {importCompleteTourDemo} from './complete-tour-demo.mjs';
+import {retireModels} from './retire-models.mjs';
+import {normalizeTour} from './dist/torres-tour-data.js';
+import {importTourDemo} from './torres360-demo.mjs';
+import {importSpecificDemo} from './specific-demo.mjs';
+import {normalizeVideoLinks} from './dist/vehicle-videos.js';
+import {normalizeOffer} from './dist/offers.js';
+import {publicVehicle} from './inventory-public.mjs';
+import {sanitizeFinance} from './dist/finance-math.js';
+import {moneyParts} from './dist/money.js';
+import http from 'node:http';
+import {readFile,writeFile,mkdir,rename} from 'node:fs/promises';
+import {resolve,extname,sep} from 'node:path';
+import {randomBytes,randomUUID,scryptSync,timingSafeEqual} from 'node:crypto';
+import {importExamples} from './demo-inventory.mjs';
+import {automaticGooglePricing,PRICING_MODEL} from './google-auto-pricing.mjs';
+import {googlePriceQuestion} from './dist/google-pricing.js';
+import {compatibilityErrors} from './dist/vehicle-specs.js';
+import {catalog,validateCatalogVehicle} from './vehicle-catalog.mjs';
+import {normalizeMoney} from './dist/money.js';
+const root=resolve('dist'),data=resolve(process.env.TORRES_DATA_DIR||'data'),uploads=resolve(data,'uploads'),sessions=new Map(),attempts=new Map();await mkdir(uploads,{recursive:true});
+async function read(name,fallback){try{return JSON.parse(await readFile(resolve(data,name),'utf8'));}catch(e){if(e.code==='ENOENT')return fallback;throw e;}}
+let pricingConnection=await read('pricing-google.json',{}),pricingBusy=false;const pricingCache=new Map();
+let account=await read('account.json',null),inventory=await read('inventory.json',[]),queue=Promise.resolve();
+if(process.env.SKIP_DEMO_SEED!=='1')inventory=await importExamples(data,inventory);
+if(inventory.length&&!inventory.some(v=>Object.hasOwn(v,'featured'))){inventory=inventory.map((v,i)=>({...v,featured:v.status==='available'&&i<5}));await save('inventory.json',inventory);}
+if(process.env.SKIP_DEMO_SEED!=='1')inventory=await importSpecificDemo(data,inventory);
+if(process.env.SKIP_DEMO_SEED!=='1')inventory=await importTourDemo(data,inventory);
+inventory=await retireModels(data,inventory);
+if(process.env.SKIP_DEMO_SEED!=='1')inventory=await importCompleteTourDemo(data,inventory);
+if(process.env.SKIP_DEMO_SEED!=='1')inventory=await importPhotoTourDemo(data,inventory);
+
+async function save(name,value){const p=resolve(data,name);await writeFile(p+'.tmp',JSON.stringify(value,null,2));await rename(p+'.tmp',p);}
+function json(res,status,value){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(value));}
+function token(req){return req.headers.cookie?.match(/(?:^|;\s*)tg_session=([a-f0-9]+)/)?.[1];}function authorized(req){return(sessions.get(token(req))||0)>Date.now();}
+async function body(req){let size=0,chunks=[];for await(const chunk of req){size+=chunk.length;if(size>16*1024*1024)throw Error('Solicitud demasiado grande.');chunks.push(chunk);}return JSON.parse(Buffer.concat(chunks).toString()||'{}');}
+function login(res){const t=randomBytes(32).toString('hex');sessions.set(t,Date.now()+28800000);res.setHeader('Set-Cookie',`tg_session=${t}; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800`);}
+function vehicle(input){if(input.id&&!/^[a-f0-9-]{36}$/.test(input.id))throw Error('Identificador de vehículo inválido.');const out={id:input.id||randomUUID()};for(const key of ['make','name','year','engine','type','description','price','mileage','fuel','transmission','city','country','condition','version','color','drive'])out[key]=String(input[key]||'').trim().slice(0,key==='description'?6000:key==='version'?500:150);if(!out.make||!out.name||!/^\d{4}$/.test(out.year))throw Error('Completa marca, modelo y año válido.');out.country='Bolivia';normalizeMoney(input,out);out.catalogRef=/^(?:carapi:\d{1,9}|epa:\d{1,8}|aduana:\d{1,6}(?:\.\d{1,6}){8})$/.test(String(input.catalogRef))?String(input.catalogRef):'';const errors=out.catalogRef?[]:compatibilityErrors(out);if(errors.length)throw Error(errors.join(' '));out.featured=input.featured===true;out.status=['available','draft','sold'].includes(input.status)?input.status:'draft';if(out.status!=='available')out.featured=false;out.photos=Array.isArray(input.photos)?input.photos.filter(p=>typeof p==='string'&&(/^\/uploads\/[a-f0-9-]+\.(jpg|png|webp)$/.test(p)||p==='/assets/reference.png'||/^\/assets\/photo-tour\/bmw-(?:panorama\.png|dashboard\.jpg|seats\.jpg)$/.test(p)||/^\/assets\/tour-demo\/(?:exterior-\d{2}|interior-delantero|interior-trasero|tablero|maletero)\.svg$/.test(p)||/^\/assets\/examples\/ferrari-458-[12]\.jpg$/.test(p))).slice(0,12):[];out.exampleKey=out.photos.includes('/assets/reference.png')?(inventory.find(v=>v.id===out.id)?.exampleKey||''):'';out.comparables=Array.isArray(input.comparables)?input.comparables.slice(0,30).map(c=>({title:String(c.title||'').slice(0,200),url:/^https?:\/\//.test(c.url)?String(c.url).slice(0,2000):'',price:Number(c.price)>0?Number(c.price):0,currency:c.currency==='BOB'?'BOB':'USD',year:String(c.year||'').slice(0,4),mileage:String(c.mileage||'').slice(0,80),date:String(c.date||'').slice(0,30),providedByAdmin:c.providedByAdmin===true,details:c.providedByAdmin?String(c.snippet||c.details||'').slice(0,6000):''})):[];const previous=inventory.find(v=>v.id===out.id);normalizeOffer(input,out,previous);out.torres360=Object.hasOwn(input,'torres360')?normalizeTour(input.torres360):(previous?.torres360||{enabled:false,exterior:[],scenes:[]});if(previous?.showcaseDemo){out.showcaseDemo=true;out.photoCredits=previous.photoCredits;}out.videoLinks=Object.hasOwn(input,'videoLinks')?normalizeVideoLinks(input.videoLinks):(previous?.videoLinks||[]);if(Object.hasOwn(input,'privateFinance')){if(!input.privateFinance||typeof input.privateFinance!=='object'||Array.isArray(input.privateFinance))throw Error('Acuerdo privado inválido.');out.privateFinance=sanitizeFinance(input.privateFinance,previous?.privateFinance);out.privateFinance.updatedAt=new Date().toISOString();}else if(previous?.privateFinance)out.privateFinance=previous.privateFinance;
+if(out.privateFinance){if(previous?.privateFinance?.advertisedAtSale)out.privateFinance.advertisedAtSale=previous.privateFinance.advertisedAtSale;if(out.status==='sold'&&out.privateFinance.salePrice>0&&!out.privateFinance.advertisedAtSale){const advertised=moneyParts(previous||out);if(advertised.amount&&advertised.currency)out.privateFinance.advertisedAtSale={amount:advertised.amount,currency:advertised.currency};if(!out.privateFinance.saleDate)out.privateFinance.saleDate=new Date().toLocaleDateString('en-CA',{timeZone:'America/La_Paz'});}}return out;}
+http.createServer(async(req,res)=>{try{const path=new URL(req.url,'http://localhost').pathname;
+ if(path.startsWith('/api/')){
+  if(req.method!=='GET'&&req.headers.origin!==`http://${req.headers.host}`)return json(res,403,{error:'Origen no permitido.'});
+  if(path==='/api/inventory'&&req.method==='GET')return json(res,200,inventory.filter(v=>v.status==='available').map(publicVehicle));
+  if(path==='/api/admin/status'&&req.method==='GET')return json(res,200,{configured:!!account,authenticated:authorized(req)});
+  if(['/api/admin/setup','/api/admin/login'].includes(path)&&req.method==='POST'){
+   const key=req.socket.remoteAddress;let entry=attempts.get(key);if(!entry||Date.now()-entry.start>900000)entry={count:0,start:Date.now()};if(entry.count>=12)return json(res,429,{error:'Demasiados intentos. Espera 15 minutos.'});entry.count++;attempts.set(key,entry);
+   const input=await body(req),password=String(input.password||'');if(password.length>500)throw Error('Contraseña demasiado larga.');
+   if(path.endsWith('/setup')){if(account)return json(res,409,{error:'El administrador ya está configurado.'});if(password.length<12)throw Error('Usa al menos 12 caracteres.');const salt=randomBytes(16).toString('hex'),next={salt,hash:scryptSync(password,salt,64).toString('hex')};await save('account.json',next);account=next;}
+   else if(!account||!timingSafeEqual(scryptSync(password,account.salt,64),Buffer.from(account.hash,'hex')))return json(res,401,{error:'Contraseña incorrecta.'});attempts.delete(key);login(res);return json(res,200,{ok:true});
+  }
+  if(!authorized(req))return json(res,401,{error:'Inicia sesión para continuar.'});
+  if(path==='/api/admin/catalog'&&req.method==='POST')return json(res,200,await catalog(await body(req)));
+  if(path==='/api/admin/carousel'&&req.method==='POST'){const input=await body(req);const ids=input.ids;if(!Array.isArray(ids)||new Set(ids).size!==ids.length||ids.length>5)throw Error('Selecciona hasta 5 vehículos distintos para la ruleta.');const job=queue.then(async()=>{if(ids.some(id=>!inventory.some(v=>v.id===id&&v.status==='available')))throw Error('Solo puedes escoger vehículos disponibles.');const next=inventory.map(v=>({...v,featured:ids.includes(v.id)}));await save('inventory.json',next);inventory=next;});queue=job.catch(()=>{});await job;return json(res,200,{ok:true});}
+  if(path==='/api/admin/pricing-connection'&&req.method==='GET')return json(res,200,{configured:!!(process.env.GEMINI_API_KEY||pricingConnection.apiKey),model:PRICING_MODEL});
+  if(path==='/api/admin/pricing-connection'&&req.method==='POST'){const input=await body(req),key=String(input.apiKey||'').trim();if(!/^[A-Za-z0-9_-]{30,200}$/.test(key))throw Error('Revisa la clave de Google.');const next={apiKey:key};await save('pricing-google.json',next);pricingConnection=next;pricingCache.clear();return json(res,200,{configured:true,model:PRICING_MODEL});}
+  if(path==='/api/admin/research'&&req.method==='POST'){const input=await body(req),cacheKey=googlePriceQuestion(input),cached=pricingCache.get(cacheKey);if(cached&&Date.now()-cached.at<600000)return json(res,200,{...cached.value,cached:true});if(pricingBusy)throw Error('Ya hay una consulta a Google en curso. Espera a que termine.');pricingBusy=true;try{const result=await automaticAiPricing(input);if(pricingCache.size>=40)pricingCache.delete(pricingCache.keys().next().value);pricingCache.set(cacheKey,{value:result,at:Date.now()});return json(res,200,result);}finally{pricingBusy=false;}}
+  if(path==='/api/admin/logout'&&req.method==='POST'){sessions.delete(token(req));res.setHeader('Set-Cookie','tg_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');return json(res,200,{ok:true});}
+  if(path==='/api/admin/inventory'&&req.method==='GET')return json(res,200,inventory);
+  if(path==='/api/admin/upload'&&req.method==='POST'){const input=await body(req),match=String(input.image||'').match(/^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/);if(!match)throw Error('Usa fotos JPG, PNG o WebP.');const bytes=Buffer.from(match[2],'base64');if(bytes.length>8*1024*1024)throw Error('Máximo 8 MB por foto.');const valid=match[1]==='jpeg'?bytes[0]===255&&bytes[1]===216:match[1]==='png'?bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])):bytes.toString('ascii',0,4)==='RIFF'&&bytes.toString('ascii',8,12)==='WEBP';if(!valid)throw Error('La imagen no es válida.');const name=randomUUID()+'.'+(match[1]==='jpeg'?'jpg':match[1]);await writeFile(resolve(uploads,name),bytes);return json(res,200,{url:'/uploads/'+name});}
+  if(path==='/api/admin/inventory'&&['POST','DELETE'].includes(req.method)){const input=await body(req);let result;const job=queue.then(async()=>{let next;if(req.method==='DELETE'){next=inventory.filter(v=>v.id!==input.id);result={ok:true};}else{const v=vehicle(input);await validateCatalogVehicle(v);if(v.status==='available'&&!v.photos.length)throw Error('Añade una foto antes de publicar.');next=inventory.some(x=>x.id===v.id)?inventory.map(x=>x.id===v.id?v:x):[v,...inventory];result=v;}if(next.filter(v=>v.featured&&v.status==='available').length>5)throw Error('La ruleta admite un máximo de 5 vehículos. Desmarca otro primero.');await save('inventory.json',next);inventory=next;});queue=job.catch(()=>{});await job;return json(res,200,result);}
+  return json(res,404,{error:'Ruta no encontrada.'});
+ }
+ const isUpload=path.startsWith('/uploads/'),base=isUpload?uploads:root;const file=resolve(base,isUpload?'.'+path.slice(8):'.'+(path==='/'?'/index.html':path==='/admin'||path==='/admin/'?'/admin.html':path));if(!file.startsWith(base+sep))return json(res,403,{error:'Acceso denegado.'});const bytes=await readFile(file);res.writeHead(200,{'Content-Type':({'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png','.svg':'image/svg+xml','.jpg':'image/jpeg','.webp':'image/webp','.glb':'model/gltf-binary','.wasm':'application/wasm','.json':'application/json'})[extname(file)]||'application/octet-stream','X-Content-Type-Options':'nosniff','Cache-Control':'no-cache'});res.end(bytes);
+ }catch(e){json(res,e.code==='ENOENT'?404:400,{error:e.code==='ENOENT'?'No encontrado.':e.message});}}).listen(Number(process.env.PORT)||5173,'127.0.0.1',()=>console.log('Cliente: http://127.0.0.1:5173/ | Admin: http://127.0.0.1:5173/admin'));

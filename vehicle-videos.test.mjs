@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {normalizeVideoLinks} from './dist/vehicle-videos.js';
+import {publicVehicle} from './inventory-public.mjs';
+const links=['https://www.youtube.com/watch?v=demo','https://www.instagram.com/reel/demo/'];
+assert.deepEqual(normalizeVideoLinks(links),links);
+assert.deepEqual(normalizeVideoLinks(['','  ']),[]);
+assert.deepEqual(normalizeVideoLinks([links[0],links[0]]),[links[0]]);
+assert.throws(()=>normalizeVideoLinks([...links,'https://www.tiktok.com/@demo/video/1']),/máximo de 2/);
+for(const unsafe of ['javascript:alert(1)','data:text/html,test','http://example.com/video','https://user:password@example.com/video','video sin enlace'])assert.throws(()=>normalizeVideoLinks([unsafe]));
+assert.throws(()=>normalizeVideoLinks('https://example.com/video'),/lista/);
+const publicData=publicVehicle({id:'demo',videoLinks:links,privateFinance:{ownerName:'privado'}});assert.deepEqual(publicData.videoLinks,links);assert.equal('privateFinance' in publicData,false);
+console.log('PASS: two optional video links, HTTPS validation, duplicate handling and public exposure without private finances.');

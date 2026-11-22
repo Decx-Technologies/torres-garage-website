@@ -1,0 +1,127 @@
+/* Keep the drive scene outside the catalogue's content grid. */
+.hero{overflow:clip}
+.hero{--intro-progress:0}
+.showroom{transform:translateY(calc(var(--intro-progress) * -32px)) scale(calc(1 - var(--intro-progress) * .06));transform-origin:center}
+.showroom-heading{opacity:calc(1 - var(--intro-progress) * 1.8);translate:0 calc(var(--intro-progress) * -22px)}
+.showroom-dashboard{opacity:calc(1 - var(--intro-progress) * 1.5)}
+.showroom-explore{cursor:default;pointer-events:none;gap:8px;opacity:calc(1 - var(--intro-progress) * 4);bottom:4%}
+.showroom-explore small{font-size:9px;letter-spacing:2px;color:var(--hero-muted)}
+.showroom-explore i{height:26px;width:16px;border:1px solid var(--hero-muted);border-radius:12px;background:none;position:relative;animation:none}
+.showroom-explore i:after{content:'';position:absolute;left:6px;top:5px;width:2px;height:6px;background:var(--red);border-radius:2px;animation:scroll 1.8s infinite}
+@media(max-width:800px){.showroom-explore{bottom:5.8%;gap:7px}.showroom-explore i{height:23px}.showroom-explore small{font-size:8px;letter-spacing:1.6px}}
+@media(prefers-reduced-motion:reduce){.showroom{transform:none}.showroom-heading{opacity:1;translate:none}.showroom-dashboard,.showroom-explore{opacity:1}.showroom-explore i:after{animation:none}}
+.drive-journey{padding:32px 0 0;width:100%;overflow:clip}
+.drive-sticky{height:350px;border-radius:0;border-inline:0;background:radial-gradient(ellipse at 50% 70%,var(--halo),transparent 65%),var(--road-panel);box-shadow:none}
+.drive-copy{left:var(--gutter);right:var(--gutter);top:30px;width:auto;max-width:850px;pointer-events:none}
+.drive-copy .eyebrow{margin-bottom:9px}
+.drive-copy h2{font-size:clamp(24px,2.2vw,32px)}
+.drive-copy p{margin-top:9px;font-size:13px;max-width:none}
+.drive-landscape{left:0;right:0;width:100%;top:125px;height:210px;opacity:1}
+.drive-road{display:block;width:100%;height:100%;overflow:hidden}
+.road-edge{stroke-width:64}.road-surface{stroke-width:60}.road-shadow{stroke-width:80;filter:blur(10px)}
+.road-center{stroke-width:1.5;stroke-dasharray:16 22}
+.drive-skip{right:var(--gutter);bottom:17px;font-size:13px;z-index:3;background:var(--road-panel);padding:5px 0}
+.is-dragging .showroom-card{transition:box-shadow .3s,filter .3s,border-color .3s}
+.is-dragging .showroom,.is-dragging .showroom-card{cursor:grabbing}
+.showroom-card{backface-visibility:hidden}
+.showroom-card,.showroom-controls button,.game-controls button{-webkit-user-select:none;user-select:none;touch-action:manipulation}
+.showroom-card{touch-action:pan-y}
+.showroom-controls>button{min-width:44px;min-height:44px}
+.showroom-pagination button{height:44px;min-width:28px}.showroom-pagination button:before{top:21px}
+.game-dialog[open]{padding-top:max(12px,env(safe-area-inset-top));padding-bottom:max(12px,env(safe-area-inset-bottom));overscroll-behavior:contain}
+.game-stage{width:min(480px,calc((100dvh - 190px) * 2 / 3),calc(100vw - 40px));height:auto;aspect-ratio:2/3;flex-shrink:0}
+.game-top button{min-width:44px;min-height:44px}.game-controls>button{min-width:58px;min-height:48px}
+.game-stage canvas{object-fit:contain;touch-action:none}
+@media(max-width:800px){
+ .drive-journey{padding-top:24px}.drive-sticky{height:305px}.drive-copy{top:25px;left:var(--gutter);right:var(--gutter)}
+ .drive-copy .eyebrow{font-size:9px;line-height:1.6}.drive-copy h2{font-size:24px;max-width:480px}.drive-copy p{display:none}
+ .drive-landscape{top:115px;left:0;right:0;width:100%;height:180px}.road-edge{stroke-width:52}.road-surface{stroke-width:48}.road-shadow{stroke-width:65}
+ .drive-skip{font-size:12px;bottom:12px}.showroom-controls{gap:12px}.showroom-pagination{gap:5px}
+ .showroom-hint{padding-inline:12px;max-width:330px}.game-dialog{padding-inline:12px}.game-stage{width:min(480px,calc((100dvh - 195px) * 2 / 3),calc(100vw - 24px))}
+ .game-controls small{font-size:11px}.game-controls>span{font-size:9px;line-height:1.4}.game-hud small{font-size:11px}
+ .game-overlay .eyebrow{font-size:11px}.game-overlay p{font-size:14px}.game-overlay{padding:18px}
+}
+@media(max-width:380px){.drive-copy h2{font-size:22px}.showroom-controls{gap:9px}.showroom-controls>button{width:44px}.showroom-pagination button{min-width:23px;width:23px}}
+@media(max-height:620px) and (min-width:600px){
+ .game-dialog[open]{display:grid;padding:12px max(20px,7vw);grid-template-columns:minmax(180px,1fr) auto;grid-template-rows:auto auto 1fr;gap:12px 30px;align-items:start}
+ .game-stage{grid-column:2;grid-row:1/4;width:calc((100dvh - 24px) * 2 / 3);height:auto;max-width:none;aspect-ratio:2/3}
+ .game-top{align-self:start}.game-hud{padding-top:14px}.game-controls{gap:10px}.game-controls>span{letter-spacing:0}.game-overlay p{font-size:12px}.game-overlay h2{font-size:23px}.game-overlay .button{padding:12px;min-height:44px}
+}
+@media(prefers-reduced-motion:reduce){.showroom-card{transition:none}.drive-road{scroll-behavior:auto}}
+
+/* The opening screen lifts as one panel over the road scene. */
+.intro-stage{position:relative;height:220svh;isolation:isolate}
+.intro-pin{position:sticky;top:0;height:100svh;width:100%;overflow:clip;--screen-progress:0;background:var(--road-panel)}
+.intro-pin>.hero{position:absolute;inset:0;height:100%;min-height:0;z-index:2;transform:translate3d(0,calc(var(--screen-progress) * -103%),0);border-radius:0 0 calc(var(--screen-progress) * 32px) calc(var(--screen-progress) * 32px);box-shadow:0 22px 75px #0006;will-change:transform;border-bottom:1px solid #ed254c55}
+.intro-pin>.hero:before{content:'';position:absolute;bottom:0;left:15%;right:15%;height:1px;background:linear-gradient(90deg,transparent,#ff4262,transparent);box-shadow:0 0 22px #f22c5860;pointer-events:none;z-index:5}
+.intro-pin .showroom{transform:none}
+.intro-pin .showroom-heading{opacity:1;translate:none}
+.intro-pin .showroom-dashboard{opacity:1}
+.intro-pin .showroom-explore{opacity:calc(1 - var(--screen-progress) * 3)}
+.intro-pin>.drive-journey{position:absolute;inset:0;height:100%;padding:0;z-index:1;transform:scale(calc(.95 + var(--screen-progress) * .05));transform-origin:center;filter:brightness(calc(.7 + var(--screen-progress) * .3))}
+.intro-pin .drive-sticky{height:100%;min-height:0;border:0;position:relative}
+.intro-pin .drive-copy{top:24%;max-width:950px}
+.intro-pin .drive-copy h2{font-size:clamp(30px,3.2vw,48px);line-height:1.2}
+.intro-pin .drive-copy p{font-size:16px;margin-top:18px}
+.intro-pin .drive-landscape{top:45%;height:210px}
+.intro-pin .drive-skip{bottom:12%;background:transparent;font-size:14px}
+@media(max-width:800px){
+ .intro-pin .drive-copy{top:23%;left:var(--gutter);right:var(--gutter)}
+ .intro-pin .drive-copy h2{font-size:32px;max-width:420px;letter-spacing:-1px}
+ .intro-pin .drive-copy .eyebrow{font-size:10px;max-width:290px;margin-bottom:18px}
+ .intro-pin .drive-landscape{top:49%;height:180px}
+ .intro-pin .drive-skip{bottom:12%;right:var(--gutter);font-size:14px}
+}
+@media(max-height:550px) and (min-width:600px){.intro-pin .drive-copy{top:15%}.intro-pin .drive-copy h2{font-size:30px}.intro-pin .drive-copy p{display:none}.intro-pin .drive-landscape{top:40%;height:180px}.intro-pin .drive-skip{bottom:8%}}
+@media(prefers-reduced-motion:reduce){
+ .intro-stage{height:auto}.intro-pin{position:relative;height:auto;overflow:visible}
+ .intro-pin>.hero{position:relative;height:100svh;min-height:640px;transform:none;box-shadow:none;border-radius:0;will-change:auto}
+ .intro-pin>.drive-journey{position:relative;height:350px;transform:none;filter:none}
+ .intro-pin .drive-copy{top:30px}.intro-pin .drive-copy h2{font-size:28px}.intro-pin .drive-landscape{top:125px}.intro-pin .drive-skip{bottom:17px}
+ .intro-pin .showroom-explore{opacity:1}
+}
+
+/* A single intentional gesture completes the opening transition. */
+.intro-stage{--road-height:360px;height:100svh;transition:height .85s cubic-bezier(.65,0,.25,1);overflow-anchor:none}
+.intro-pin{position:relative;height:100%;overflow:clip}
+.intro-pin>.hero{height:100svh;transform:translate3d(0,0,0);border-radius:0;transition:transform .85s cubic-bezier(.65,0,.25,1),border-radius .85s;box-shadow:0 20px 65px #0005}
+.intro-pin>.drive-journey{inset:0 0 auto;height:var(--road-height);transform:translateY(18px);filter:none;opacity:.65;transition:transform .85s cubic-bezier(.22,.7,.22,1),opacity .7s}
+.intro-stage.is-dismissed{height:var(--road-height)}
+.intro-stage.is-dismissed .hero{transform:translate3d(0,-103%,0);border-radius:0 0 28px 28px}
+.intro-stage.is-dismissed .drive-journey{transform:none;opacity:1}
+.intro-pin .drive-copy{top:30px;max-width:850px}
+.intro-pin .drive-copy h2{font-size:clamp(25px,2.4vw,36px);line-height:1.2}
+.intro-pin .drive-copy p{font-size:14px;margin-top:12px}
+.intro-pin .drive-landscape{top:128px;height:210px}
+.intro-pin .drive-skip{bottom:18px;font-size:13px}
+.return-showroom{position:absolute;right:var(--gutter);top:35px;border:1px solid var(--border);background:var(--surface);color:var(--muted);padding:11px 17px;border-radius:24px;font-size:13px;z-index:4;transition:color .25s,border-color .25s,box-shadow .25s}
+.return-showroom:hover{color:var(--text);border-color:var(--red);box-shadow:0 0 20px #ed17441a}
+.intro-pin .drive-copy:after{content:'';display:block;margin-top:16px;width:76px;height:2px;background:linear-gradient(90deg,var(--red),transparent)}
+.intro-stage.is-dismissed .drive-copy{animation:road-copy-enter .75s .2s both}
+.intro-stage.is-dismissed .road-center{animation:road-lights 8s linear infinite}
+.light .intro-pin>.hero{box-shadow:0 20px 70px #34445926}
+@keyframes road-copy-enter{from{opacity:0;translate:0 12px}to{opacity:1;translate:0 0}}
+@keyframes road-lights{to{stroke-dashoffset:-76}}
+@media(max-width:800px){
+ .intro-stage{--road-height:340px}.intro-pin .drive-copy{top:26px;max-width:440px}.intro-pin .drive-copy h2{font-size:27px}
+ .intro-pin .drive-copy .eyebrow{font-size:9px;margin-bottom:12px;max-width:300px}.intro-pin .drive-landscape{top:135px;height:180px}
+ .intro-pin .drive-skip{bottom:15px;font-size:12px}.return-showroom{left:var(--gutter);right:auto;top:auto;bottom:15px;font-size:12px;padding:8px 12px}
+ .intro-pin .drive-copy:after{margin-top:12px;width:50px}
+}
+@media(max-width:380px){.intro-pin .drive-copy h2{font-size:24px}.intro-pin .drive-skip{font-size:11px}.return-showroom{font-size:11px}}
+@media(prefers-reduced-motion:reduce){
+ .intro-stage{height:100svh;transition:none}.intro-pin{height:100%;overflow:clip}.intro-pin>.hero{position:absolute;height:100svh;min-height:0;transition:none}
+ .intro-pin>.drive-journey{position:absolute;height:var(--road-height);transform:none;transition:none}.intro-stage.is-dismissed{height:var(--road-height)}
+ .intro-stage.is-dismissed .drive-copy,.intro-stage.is-dismissed .road-center{animation:none}
+}
+
+/* Reverse the panel and carousel together for the upward gesture. */
+.intro-stage{transition-duration:.95s}.intro-pin>.hero{transition-duration:.95s}
+.is-transition-spinning .showroom-card{transition:filter .2s,border-color .2s,box-shadow .2s}
+.is-transition-spinning .showroom-orbit{box-shadow:0 0 40px #ed17482b,0 12px 28px -18px #ff123c;border-bottom-color:#ed1748}
+.return-gesture-hint{position:absolute;top:38px;right:var(--gutter);margin:0;color:var(--muted);font-size:12px;letter-spacing:.3px;pointer-events:none}
+.return-showroom{display:none}
+.vehicle-gallery{display:flex;gap:10px;overflow:auto;margin:15px 0 25px}.vehicle-gallery button{border:1px solid var(--border);padding:0;background:none;border-radius:8px;overflow:hidden;flex:0 0 95px}.vehicle-gallery img{width:95px;height:65px;object-fit:cover;display:block}.empty-showroom{position:absolute;left:15%;right:15%;top:35%;text-align:center;color:var(--hero-muted);font-size:20px;line-height:1.7}.showroom-cards[hidden],.showroom-dashboard[hidden]{display:none}
+@media(max-width:1100px){.return-gesture-hint{top:auto;bottom:20px;left:var(--gutter);right:auto;font-size:11px}}
+@media(max-width:380px){.return-gesture-hint{max-width:150px;line-height:1.5;font-size:10px;bottom:12px}}
+@media(prefers-reduced-motion:reduce){.intro-stage,.intro-pin>.hero{transition:none}.is-transition-spinning .showroom-orbit{box-shadow:none}}

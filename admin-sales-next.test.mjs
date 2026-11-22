@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {settlementTotals} from './dist/commission-exchange.js';
+import {financeTotals,sanitizeFinance,financeSummary} from './dist/finance-math.js';
+import {normalizeOffer,offerParts} from './dist/offers.js';
+import {publicVehicle} from './inventory-public.mjs';
+import {indicativePrices} from './indicative-prices.mjs';
+const f={currency:'USD',payoutCurrency:'BOB',mode:'percent',salePrice:55000,rate:4,costs:200,exchangeRate:9,receivedRate:10,received:22000};
+let t=financeTotals(f),p=settlementTotals(f,t);assert.equal(p.expected,19800);assert.equal(p.receivedBase,2200);assert.equal(p.pendingBase,0);assert.equal(p.fxDifference,2200);assert.doesNotThrow(()=>sanitizeFinance(f));assert.throws(()=>sanitizeFinance({...f,receivedRate:''}),/cambio/);assert.throws(()=>sanitizeFinance({...f,received:23000}),/supera/);
+p=settlementTotals({...f,received:10000},t);assert.equal(p.receivedBase,1000);assert.equal(p.pendingBase,1200);assert.equal(p.pending,10800);assert.equal(p.fxDifference,1000);
+p=settlementTotals({...f,receivedRate:8,received:17600},t);assert.equal(p.fxDifference,-2200);
+const reverse={currency:'BOB',payoutCurrency:'USD',salePrice:100000,mode:'fixed',fixedCommission:10000,exchangeRate:9,receivedRate:10,received:1000};p=settlementTotals(reverse,financeTotals(reverse));assert.equal(p.receivedBase,10000);assert.equal(p.fxDifference,1000);assert.equal(p.pendingBase,0);
+const groups=financeSummary([{status:'sold',privateFinance:f}]);assert.equal(groups[1].received,2200);assert.equal(groups[1].pending,0);assert.equal(groups[1].net,2000);
+const previous={priceAmount:60000,currency:'USD'},current={priceAmount:55000,currency:'USD'};normalizeOffer({offerEnabled:true},current,previous);assert.equal(offerParts(current).before,60000);assert.equal(publicVehicle({...current,privateFinance:f}).offer.previousAmount,60000);assert.equal(publicVehicle({...current,privateFinance:f}).privateFinance,undefined);
+const further={priceAmount:52000,currency:'USD'};normalizeOffer({offerEnabled:true},further,current);assert.equal(further.offer.previousAmount,55000);const noOffer={priceAmount:52000,currency:'USD'};normalizeOffer({offerEnabled:false},noOffer,current);assert.equal(offerParts(noOffer),null);assert.throws(()=>normalizeOffer({offerEnabled:true},{priceAmount:70000,currency:'USD'},previous),/baja/);assert.throws(()=>normalizeOffer({offerEnabled:true},{priceAmount:55000,currency:'BOB'},previous),/moneda/);
+for(const input of [{make:'Toyota',name:'4Runner',year:'2025',type:'SUV',country:'Bolivia'},{make:'Marca desconocida',name:'Unidad',year:'2023',price:'40,000',currency:'BOB'}]){const group=indicativePrices([],input)[0];assert.equal(group.scenarios.length,3);assert.equal(group.method,'indicative');assert.ok(group.scenarios.every(s=>Number.isFinite(s.price)&&s.price>0));assert.ok(group.scenarios[0].price<group.scenarios[1].price&&group.scenarios[1].price<group.scenarios[2].price);assert.match(group.assumptions,/supuest|no un valor verificado/i);}
+const nearby=indicativePrices([{url:'https://bolmotor.com/autos/example',title:'Toyota 4Runner 2024',snippet:'Usado USD 50000'}],{make:'Toyota',name:'4Runner',year:2025,currency:'USD'})[0];assert.equal(nearby.count,1);assert.equal(nearby.scenarios[1].price,50000);assert.match(nearby.assumptions,/No confirman/);
+console.log('PASS: USD/BOB commission receipts, partial payments, FX gains and losses, separate totals, offers and clearly labeled three-price fallback.');

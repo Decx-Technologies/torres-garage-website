@@ -1,0 +1,2 @@
+const fields=['id','make','name','year','engine','type','description','price','priceAmount','currency','mileage','fuel','transmission','drive','city','country','condition','version','color','status','featured','photos','exampleKey','offer','videoLinks','showcaseDemo','photoCredits','torres360'];
+export function publicVehicle(vehicle){return Object.fromEntries(fields.filter(key=>Object.hasOwn(vehicle,key)).map(key=>[key,vehicle[key]]));}
