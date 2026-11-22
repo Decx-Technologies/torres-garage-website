@@ -56,7 +56,9 @@ export function redisStore({url,token,fetchImpl=fetch,blobPut}){
 }
 
 export function createStore(env=process.env){
- const url=env.KV_REST_API_URL||env.UPSTASH_REDIS_REST_URL,token=env.KV_REST_API_TOKEN||env.UPSTASH_REDIS_REST_TOKEN;
+ // The Vercel integration may add a custom prefix (e.g. STORAGE_KV_REST_API_URL), so match by suffix.
+ const find=suffix=>{const key=Object.keys(env).find(k=>k===suffix||k.endsWith('_'+suffix));return key?env[key]:undefined;};
+ const url=find('KV_REST_API_URL')||find('UPSTASH_REDIS_REST_URL'),token=find('KV_REST_API_TOKEN')||find('UPSTASH_REDIS_REST_TOKEN');
  if(url&&token)return redisStore({url,token});
  if(env.VERCEL)throw Error('Falta conectar Upstash Redis al proyecto de Vercel (Storage → Upstash Redis). Vercel no permite guardar datos en archivos.');
  return fileStore(resolve(env.TORRES_DATA_DIR||'data'));

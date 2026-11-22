@@ -21,8 +21,8 @@ function fakeUpstash(){
   try{res.end(JSON.stringify({result:run(JSON.parse(body))}));}catch(e){res.statusCode=400;res.end(JSON.stringify({error:e.message}));}});
  return new Promise(r=>server.listen(0,'127.0.0.1',()=>r({data,token,url:`http://127.0.0.1:${server.address().port}`,close:()=>server.close()})));
 }
-function instance(redis){
- const child=spawn(process.execPath,['--input-type=module','-e',"import http from 'node:http';const {handler}=await import('./backend.mjs');const s=http.createServer(handler).listen(0,'127.0.0.1',()=>console.log('PORT '+s.address().port));"],{cwd:import.meta.dirname,env:{...process.env,VERCEL:'1',KV_REST_API_URL:redis.url,KV_REST_API_TOKEN:redis.token,ADMIN_SETUP_ENABLED:''},stdio:['ignore','pipe','pipe']});
+function instance(redis,extraEnv={}){
+ const child=spawn(process.execPath,['--input-type=module','-e',"import http from 'node:http';const {handler}=await import('./backend.mjs');const s=http.createServer(handler).listen(0,'127.0.0.1',()=>console.log('PORT '+s.address().port));"],{cwd:import.meta.dirname,env:{...process.env,VERCEL:'1',KV_REST_API_URL:redis.url,KV_REST_API_TOKEN:redis.token,ADMIN_SETUP_ENABLED:'',...extraEnv},stdio:['ignore','pipe','pipe']});
  let err='';child.stderr.on('data',d=>err+=d);
  return new Promise((resolve,reject)=>{child.stdout.on('data',d=>{const m=String(d).match(/PORT (\d+)/);if(m)resolve({base:`http://127.0.0.1:${m[1]}`,host:`127.0.0.1:${m[1]}`,stop:()=>child.kill()});});child.on('exit',c=>reject(Error('instance exited '+c+': '+err)));});
 }
@@ -74,6 +74,13 @@ test('redis store uploads photos to Blob and refuses to run on Vercel without Re
  assert.equal(await store.uploadUrl('f00d.png'),'https://blob.example/uploads/f00d.png');
  assert.equal(await store.attempt('ip'),true);for(let i=0;i<11;i++)await store.attempt('ip');assert.equal(await store.attempt('ip'),false,'13th attempt blocked');
  assert.throws(()=>createStore({VERCEL:'1'}),/Upstash Redis/);
+ assert.equal(createStore({VERCEL:'1',STORAGE_KV_REST_API_URL:redis.url,STORAGE_KV_REST_API_TOKEN:redis.token}).shared,true,'prefixed integration vars');
  assert.equal(createStore({TORRES_DATA_DIR:'/tmp/x'}).shared,false);
  redis.close();
+});
+
+test('Vercel mode without Redis answers with a clear error instead of crashing',async()=>{
+ const app=await instance({url:'',token:''},{KV_REST_API_URL:'',KV_REST_API_TOKEN:''});
+ try{for(let i=0;i<2;i++){const r=await call(app,'/api/inventory');assert.equal(r.status,400);assert.match((await r.json()).error,/Upstash Redis/);}}
+ finally{app.stop();}
 });
