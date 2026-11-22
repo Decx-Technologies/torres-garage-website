@@ -1,7 +1,8 @@
 # Runtime data created by the admin panel (inventory, uploads, admin account, private deals)
-data/
-account.json
-pricing-google.json
+# (admin password is kept: account.json holds only a salted scrypt hash)
+data/*
+!data/account.json
+data/pricing-google.json
 *.tmp
 
 # Secrets / local config
