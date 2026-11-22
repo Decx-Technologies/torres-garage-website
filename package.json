@@ -7,7 +7,10 @@
     "dev": "node server.mjs",
     "start": "node server.mjs",
     "check": "node --check dist/app.js",
-    "test": "node --test admin-api.test.mjs game-behavior.test.mjs inventory-upgrade.test.mjs experience.test.mjs catalog-money.test.mjs recent-catalog.test.mjs private-sales.test.mjs admin-sales-next.test.mjs vehicle-videos.test.mjs inventory-3d.test.mjs specific-models.test.mjs torres360.test.mjs torres-guide.test.mjs complete-tour-demo.test.mjs photographic-tour.test.mjs google-pricing.test.mjs google-auto-pricing.test.mjs automatic-ai-pricing.test.mjs"
+    "test": "node --test admin-api.test.mjs game-behavior.test.mjs inventory-upgrade.test.mjs experience.test.mjs catalog-money.test.mjs recent-catalog.test.mjs private-sales.test.mjs admin-sales-next.test.mjs vehicle-videos.test.mjs inventory-3d.test.mjs specific-models.test.mjs torres360.test.mjs torres-guide.test.mjs complete-tour-demo.test.mjs photographic-tour.test.mjs google-pricing.test.mjs google-auto-pricing.test.mjs automatic-ai-pricing.test.mjs vercel-storage.test.mjs"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.9.0"
   },
   "engines": {
     "node": ">=24"

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "outputDirectory": "dist",
+  "functions": {
+    "api/index.mjs": {
+      "includeFiles": "data/account.json"
+    }
+  },
+  "rewrites": [
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/admin/", "destination": "/admin.html" },
+    { "source": "/uploads/:name", "destination": "/api/index?__route=/uploads/:name" },
+    { "source": "/api/:path*", "destination": "/api/index?__route=/api/:path*" }
+  ]
+}
